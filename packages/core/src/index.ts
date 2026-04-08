@@ -1,3 +1,1 @@
-export function fn() {
-  return "Hello, tsdown!";
-}
+export { LivePlayer, type PlayerOptions } from "./live-player.ts";

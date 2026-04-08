@@ -103,7 +103,7 @@ export class FlvVideoDemuxer {
       if (codecId !== 7) {
         events.push({
           kind: "error",
-          message: `Unsupported video codec id ${codecId} (need H.264/AVC)`,
+          message: `Unsupported video codec id ${codecId} (need H.264/AVC); video tag data[0]=0x${frameAndCodec.toString(16).padStart(2, "0")}. Dump HTTP body with curl and run ffprobe if unsure.`,
         });
         return { events, consumed: o };
       }

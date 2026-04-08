@@ -23,6 +23,10 @@ importers:
         version: 0.1.16(@types/node@25.5.2)(jiti@2.6.1)(typescript@6.0.2)(vite@8.0.7(@types/node@25.5.2)(jiti@2.6.1)(yaml@2.8.3))(yaml@2.8.3)
 
   apps/website:
+    dependencies:
+      '@live-player/core':
+        specifier: workspace:*
+        version: link:../../packages/core
     devDependencies:
       typescript:
         specifier: ~6.0.2

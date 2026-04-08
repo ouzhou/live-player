@@ -1,10 +1,15 @@
+import { audioSpecificConfigToCodecString } from "./aac-codec-string.ts";
 import { avcDecoderConfigurationRecordToCodecString } from "./avc-codec-string.ts";
 
+const FLV_TAG_AUDIO = 8;
 const FLV_TAG_VIDEO = 9;
+const FLV_SOUND_FORMAT_AAC = 10;
 
-export type FlvVideoEvent =
+export type FlvDemuxEvent =
   | { kind: "config"; ptsMs: number; description: Uint8Array; codec: string }
   | { kind: "chunk"; ptsMs: number; data: Uint8Array; keyFrame: boolean }
+  | { kind: "audio_config"; ptsMs: number; description: Uint8Array; codec: string }
+  | { kind: "audio_chunk"; ptsMs: number; data: Uint8Array }
   | { kind: "error"; message: string };
 
 function readU24BE(buf: Uint8Array, o: number): number {
@@ -35,11 +40,11 @@ function readCompositionTimeMs(buf: Uint8Array, o: number): number {
   return v;
 }
 
-export class FlvVideoDemuxer {
+export class FlvDemuxer {
   private headerDone = false;
 
-  parse(buffer: Uint8Array): { events: FlvVideoEvent[]; consumed: number } {
-    const events: FlvVideoEvent[] = [];
+  parse(buffer: Uint8Array): { events: FlvDemuxEvent[]; consumed: number } {
+    const events: FlvDemuxEvent[] = [];
     let o = 0;
 
     if (!this.headerDone) {
@@ -86,6 +91,59 @@ export class FlvVideoDemuxer {
       }
 
       o += tagBlock;
+
+      if (tagType === FLV_TAG_AUDIO) {
+        const ts = readTagTimestampMs(buffer, tagStart);
+        const body = buffer.subarray(tagStart + 11, tagStart + 11 + dataSize);
+        if (body.length < 2) {
+          events.push({ kind: "error", message: "Truncated audio tag" });
+          return { events, consumed: o };
+        }
+        const soundFormat = (body[0]! >> 4) & 0x0f;
+        if (soundFormat !== FLV_SOUND_FORMAT_AAC) {
+          events.push({
+            kind: "error",
+            message: `Unsupported audio format ${soundFormat} (need AAC)`,
+          });
+          return { events, consumed: o };
+        }
+        const packetType = body[1]!;
+        const payload = body.subarray(2);
+        const ptsMs = ts;
+
+        if (packetType === 0) {
+          const description = new Uint8Array(payload);
+          let codec: string;
+          try {
+            codec = audioSpecificConfigToCodecString(description);
+          } catch (e) {
+            events.push({
+              kind: "error",
+              message: e instanceof Error ? e.message : String(e),
+            });
+            return { events, consumed: o };
+          }
+          events.push({
+            kind: "audio_config",
+            ptsMs,
+            description,
+            codec,
+          });
+        } else if (packetType === 1) {
+          events.push({
+            kind: "audio_chunk",
+            ptsMs,
+            data: new Uint8Array(payload),
+          });
+        } else {
+          events.push({
+            kind: "error",
+            message: `Unknown AACPacketType ${packetType}`,
+          });
+          return { events, consumed: o };
+        }
+        continue;
+      }
 
       if (tagType !== FLV_TAG_VIDEO) {
         continue;

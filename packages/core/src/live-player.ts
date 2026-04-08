@@ -1,5 +1,7 @@
+import { AudioDecoderPipeline } from "./audio-decoder-pipeline.ts";
+import { AudioPlayback } from "./audio-playback.ts";
 import { GrowableBuffer } from "./byte-buffer.ts";
-import { FlvVideoDemuxer } from "./flv-video.ts";
+import { FlvDemuxer } from "./flv-demux.ts";
 import { VideoDecoderPipeline } from "./video-decoder-pipeline.ts";
 
 export type PlayerOptions = {
@@ -10,7 +12,7 @@ export type PlayerOptions = {
 };
 
 /**
- * HTTP-FLV（H.264）+ WebCodecs：拉流 → FLV 视频轨 demux → `VideoDecoder` → Canvas。
+ * HTTP-FLV（H.264 + AAC）+ WebCodecs：拉流 → FLV demux → `VideoDecoder` / `AudioDecoder` → Canvas / Web Audio。
  */
 export class LivePlayer {
   private readonly options: PlayerOptions;
@@ -18,6 +20,8 @@ export class LivePlayer {
   private readonly ownsCanvas: boolean;
   private abortController: AbortController | null = null;
   private pipeline: VideoDecoderPipeline | null = null;
+  private audioPipeline: AudioDecoderPipeline | null = null;
+  private audioPlayback: AudioPlayback | null = null;
 
   constructor(options: PlayerOptions) {
     this.options = options;
@@ -54,19 +58,41 @@ export class LivePlayer {
       this.options.onError?.(err);
       throw err;
     }
+    if (typeof globalThis.AudioDecoder === "undefined") {
+      const err = new Error("AudioDecoder (WebCodecs) is not available in this environment");
+      this.options.onError?.(err);
+      throw err;
+    }
 
     const ac = new AbortController();
     this.abortController = ac;
 
     const buffer = new GrowableBuffer();
-    const demux = new FlvVideoDemuxer();
+    const demux = new FlvDemuxer();
     let pipeline: VideoDecoderPipeline | null = new VideoDecoderPipeline(this.canvas, (err) => {
       this.options.onError?.(err);
       ac.abort();
     });
     this.pipeline = pipeline;
 
+    const audioPlayback = new AudioPlayback();
+    this.audioPlayback = audioPlayback;
+    let audioPipeline: AudioDecoderPipeline | null = new AudioDecoderPipeline(
+      (err) => {
+        this.options.onError?.(err);
+        ac.abort();
+      },
+      (data) => {
+        audioPlayback.schedule(data);
+      },
+    );
+    this.audioPipeline = audioPipeline;
+
+    let audioReady = false;
+
     try {
+      await audioPlayback.ensureRunning();
+
       const res = await fetch(url, {
         signal: ac.signal,
         mode: "cors",
@@ -112,9 +138,18 @@ export class LivePlayer {
             }
             if (ev.kind === "config") {
               pipeline!.configureFromAvc(ev.description, ev.codec);
-            } else {
+            } else if (ev.kind === "chunk") {
               const micros = Math.round(ev.ptsMs * 1000);
               pipeline!.decodeChunk(ev.data, micros, ev.keyFrame);
+            } else if (ev.kind === "audio_config") {
+              audioReady = true;
+              audioPipeline!.configureFromAsc(ev.description);
+            } else if (ev.kind === "audio_chunk") {
+              if (!audioReady) {
+                throw new Error("AAC frame before AudioSpecificConfig");
+              }
+              const micros = Math.round(ev.ptsMs * 1000);
+              audioPipeline!.decodeChunk(ev.data, micros);
             }
           }
         }
@@ -130,6 +165,11 @@ export class LivePlayer {
       pipeline?.close();
       pipeline = null;
       this.pipeline = null;
+      audioPipeline?.close();
+      audioPipeline = null;
+      this.audioPipeline = null;
+      audioPlayback.close();
+      this.audioPlayback = null;
       if (this.abortController === ac) {
         this.abortController = null;
       }
@@ -142,6 +182,10 @@ export class LivePlayer {
     this.abortController = null;
     this.pipeline?.close();
     this.pipeline = null;
+    this.audioPipeline?.close();
+    this.audioPipeline = null;
+    this.audioPlayback?.close();
+    this.audioPlayback = null;
   }
 
   destroy(): void {

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>WASM + fixtures.json 烟测</title>
+  </head>
+  <body>
+    <pre id="log"></pre>
+    <script>
+      function log(msg) {
+        document.getElementById("log").textContent += msg + "\n";
+      }
+
+      function b64ToU8(b64) {
+        const bin = atob(b64);
+        const out = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+        return out;
+      }
+
+      /** 写入 WASM 线性内存，返回指针（需 _free）；Emscripten 5 用全局 HEAPU8 */
+      function copyToHeap(Module, u8) {
+        const heap = Module.HEAPU8 || HEAPU8;
+        const ptr = Module._malloc(u8.length);
+        heap.set(u8, ptr);
+        return ptr;
+      }
+
+      var Module = {
+        onRuntimeInitialized: async function () {
+          try {
+            const heap = typeof HEAPU8 !== "undefined" ? HEAPU8 : Module.HEAPU8;
+            const res = await fetch("./fixtures.json", { credentials: "same-origin" });
+            if (!res.ok) throw new Error("fixtures.json HTTP " + res.status);
+            const fx = await res.json();
+
+            log("fixtures.json loaded");
+
+            log("wasm_init: " + Module._wasm_init());
+
+            const desc = b64ToU8(fx.video_config.description_b64);
+            const dptr = copyToHeap(Module, desc);
+            log("wasm_video_config: " + Module._wasm_video_config(dptr, desc.length));
+            Module._free(dptr);
+
+            const chunk = b64ToU8(fx.video_chunk.data_b64);
+            const cptr = copyToHeap(Module, chunk);
+            const chunkFn = Module.cwrap("wasm_video_chunk", "number", [
+              "number",
+              "number",
+              "number",
+              "number",
+            ]);
+            log(
+              "wasm_video_chunk: " +
+                chunkFn(cptr, chunk.length, fx.video_chunk.ptsMs, fx.video_chunk.keyFrame ? 1 : 0),
+            );
+            Module._free(cptr);
+
+            log("wasm_close: " + Module._wasm_close());
+            log("OK (fixture path)");
+          } catch (e) {
+            log("ERR: " + e);
+          }
+        },
+      };
+    </script>
+    <script src="../../artifacts/emcc-glue/shell.js"></script>
+  </body>
+</html>

@@ -1,23 +1,21 @@
 {
-  "$comment": "与 FlvDemuxer 事件语义对齐的占位数据；description/data 为 base64，便于在 harness 里还原为 Uint8Array。真实解码需替换为合法码流。",
+  "$comment": "烟测数据：由 mock/tools/extract-fixtures-from-mp4.py 从样例 MP4 生成；可替换为任意合法 avcC + AVCC 打包 IDR chunk。",
   "video_config": {
-    "codec": "avc1.42E01E",
-    "description_b64": "",
-    "note": "空串表示未放真实 AVC 序列头；联调时从真实 FLV 抓一条 config 的 description 填在此"
+    "codec": "avc1.4d402a",
+    "description_b64": "AU1AKv/hABRnTUAq9AeAi0IAAAMAAgAAAwB4CAEABGjuEog="
   },
   "video_chunk": {
     "ptsMs": 0,
     "keyFrame": true,
-    "data_b64": "",
-    "note": "空串占位；可换为单帧 NAL（与当前 VideoDecoder 收到的 data 一致）"
+    "data_b64": "AAAA3WWIhACHAJit///HuwxVjUcw/3GaaCoAAAMAAAMAAFo3yBo2DlOFEAAAPvb3jcAALQEXraAAJQt5oEAAMNrXaIAAZvsvHQABKI7BhAADmitWwAAMiV1aAABP3+r+AAKXH1lQABkWGtUAAOE31tgABxH2YkAAOFGxcgACMec14AAjH7OSAAJSDzsgACMh88oAAtHrIqAALz/yUgADm78nQAA5/TKOAAOb3ydAADn/cooAA6AG8MAAPUFvNAAD1Cb1gAA9Q29kAAPURviAAD1Er5wAA9xa+oAAS9fiAAHP"
   },
   "audio_config": {
     "description_b64": "",
-    "note": "ASC 二进制，base64"
+    "note": "可选"
   },
   "audio_chunk": {
     "ptsMs": 0,
     "data_b64": "",
-    "note": "AAC 帧负载"
+    "note": "可选"
   }
 }

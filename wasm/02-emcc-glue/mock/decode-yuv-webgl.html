@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>H264 I420 → WebGL (YUV shader)</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 1rem;
+        background: #111;
+        color: #ddd;
+      }
+      #c {
+        display: block;
+        max-width: 100%;
+        background: #000;
+      }
+      #log {
+        white-space: pre-wrap;
+        font-size: 12px;
+        color: #8f8;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="status">loading…</p>
+    <canvas id="c" width="640" height="360"></canvas>
+    <pre id="log"></pre>
+    <script>
+      function log(msg) {
+        document.getElementById("log").textContent += msg + "\n";
+      }
+
+      function b64ToU8(b64) {
+        const bin = atob(b64);
+        const out = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+        return out;
+      }
+
+      function copyToHeap(Module, u8) {
+        const heap = Module.HEAPU8 || HEAPU8;
+        const ptr = Module._malloc(u8.length);
+        heap.set(u8, ptr);
+        return ptr;
+      }
+
+      function createI420Shader(gl) {
+        const vs = `#version 300 es
+in vec2 a_pos;
+out vec2 v_uv;
+void main() {
+  v_uv = a_pos * 0.5 + 0.5;
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}`;
+        const fs = `#version 300 es
+precision highp float;
+uniform sampler2D u_y;
+uniform sampler2D u_u;
+uniform sampler2D u_v;
+in vec2 v_uv;
+out vec4 o_color;
+void main() {
+  float Y = texture(u_y, v_uv).r;
+  vec2 uv_s = v_uv;
+  float U = texture(u_u, uv_s).r - 0.5;
+  float V = texture(u_v, uv_s).r - 0.5;
+  float r = Y + 1.402 * V;
+  float g = Y - 0.344136 * U - 0.714136 * V;
+  float b = Y + 1.772 * U;
+  o_color = vec4(clamp(vec3(r, g, b), 0.0, 1.0), 1.0);
+}`;
+        function compile(type, src) {
+          const sh = gl.createShader(type);
+          gl.shaderSource(sh, src);
+          gl.compileShader(sh);
+          if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+            throw new Error(gl.getShaderInfoLog(sh) || "shader compile");
+          }
+          return sh;
+        }
+        const prog = gl.createProgram();
+        gl.attachShader(prog, compile(gl.VERTEX_SHADER, vs));
+        gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(prog);
+        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+          throw new Error(gl.getProgramInfoLog(prog) || "link");
+        }
+        return prog;
+      }
+
+      function uploadR8(gl, tex, w, h, data) {
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, w, h, 0, gl.RED, gl.UNSIGNED_BYTE, data);
+      }
+
+      var Module = {
+        onRuntimeInitialized: async function () {
+          const st = document.getElementById("status");
+          try {
+            const res = await fetch("./fixtures.json", { credentials: "same-origin" });
+            if (!res.ok) throw new Error("fixtures.json " + res.status);
+            const fx = await res.json();
+
+            log("wasm_init: " + Module._wasm_init());
+
+            const desc = b64ToU8(fx.video_config.description_b64);
+            const dptr = copyToHeap(Module, desc);
+            log("wasm_video_config: " + Module._wasm_video_config(dptr, desc.length));
+            Module._free(dptr);
+
+            const chunk = b64ToU8(fx.video_chunk.data_b64);
+            const cptr = copyToHeap(Module, chunk);
+            const chunkFn = Module.cwrap("wasm_video_chunk", "number", [
+              "number",
+              "number",
+              "number",
+              "number",
+            ]);
+            log(
+              "wasm_video_chunk: " +
+                chunkFn(cptr, chunk.length, fx.video_chunk.ptsMs, fx.video_chunk.keyFrame ? 1 : 0),
+            );
+            Module._free(cptr);
+
+            if (!Module._wasm_has_decoded_frame()) {
+              throw new Error(
+                "no decoded frame (decoder may need more packets or different bitstream)",
+              );
+            }
+
+            const w = Module._wasm_frame_width();
+            const h = Module._wasm_frame_height();
+            log("frame: " + w + "x" + h);
+
+            const cw = (w / 2) | 0;
+            const ch = (h / 2) | 0;
+            const ySize = w * h;
+            const uvSize = cw * ch;
+            const py = Module._malloc(ySize);
+            const pu = Module._malloc(uvSize);
+            const pv = Module._malloc(uvSize);
+            const copyFn = Module.cwrap("wasm_copy_i420", "number", ["number", "number", "number"]);
+            if (copyFn(py, pu, pv) !== 0) {
+              throw new Error("wasm_copy_i420 failed");
+            }
+
+            const heap = Module.HEAPU8 || HEAPU8;
+            const bufY = heap.subarray(py, py + ySize);
+            const bufU = heap.subarray(pu, pu + uvSize);
+            const bufV = heap.subarray(pv, pv + uvSize);
+
+            const canvas = document.getElementById("c");
+            canvas.width = w;
+            canvas.height = h;
+            const gl = canvas.getContext("webgl2", { alpha: false, antialias: false });
+            if (!gl) {
+              throw new Error("WebGL2 required");
+            }
+
+            const prog = createI420Shader(gl);
+            gl.useProgram(prog);
+            const locY = gl.getUniformLocation(prog, "u_y");
+            const locU = gl.getUniformLocation(prog, "u_u");
+            const locV = gl.getUniformLocation(prog, "u_v");
+
+            const ty = gl.createTexture();
+            const tu = gl.createTexture();
+            const tv = gl.createTexture();
+            // 必须先切换 activeTexture，否则后续 bind 会覆盖上一张纹理在同一单元上的绑定
+            gl.activeTexture(gl.TEXTURE0);
+            uploadR8(gl, ty, w, h, bufY);
+            gl.uniform1i(locY, 0);
+            gl.activeTexture(gl.TEXTURE1);
+            uploadR8(gl, tu, cw, ch, bufU);
+            gl.uniform1i(locU, 1);
+            gl.activeTexture(gl.TEXTURE2);
+            uploadR8(gl, tv, cw, ch, bufV);
+            gl.uniform1i(locV, 2);
+
+            const buf = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+            gl.bufferData(
+              gl.ARRAY_BUFFER,
+              new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+              gl.STATIC_DRAW,
+            );
+            const locPos = gl.getAttribLocation(prog, "a_pos");
+            gl.enableVertexAttribArray(locPos);
+            gl.vertexAttribPointer(locPos, 2, gl.FLOAT, false, 0, 0);
+            gl.viewport(0, 0, w, h);
+            gl.clearColor(0.1, 0.1, 0.1, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            Module._free(py);
+            Module._free(pu);
+            Module._free(pv);
+
+            log("wasm_close: " + Module._wasm_close());
+
+            st.textContent = "OK — I420 decoded + WebGL YUV→RGB";
+            log("OK");
+          } catch (e) {
+            st.textContent = "ERR: " + e;
+            log(String(e));
+          }
+        },
+      };
+    </script>
+    <script src="../../artifacts/emcc-glue/shell.js"></script>
+  </body>
+</html>

@@ -15,4 +15,10 @@ python3 wasm/02-emcc-glue/mock/tools/extract-fixtures-from-mp4.py /path/to/video
 - `sample-annexb-short.h264`：短 Annex-B 元数据流。
 - `chunk-first-idr-avcc.bin` / `chunk-first-idr-avcc.b64.txt`：**首个 IDR** 的 **4 字节长度大端 + NAL**，对应 `FlvDemuxEvent` 的 `chunk.data` / `wasm_video_chunk`（若前 0.2s 内无 IDR，会自动再扫 **前 2s** 并生成 `sample-annexb-2s.h264`）。
 
-**烟测页**：`harness.html`（需先执行两步打包，使 `artifacts/emcc-glue/shell.js` 存在）。写入 WASM 堆时请用全局 **`HEAPU8`**（或 `globalThis.HEAPU8`），不要用 `Module.HEAPU8`（Emscripten 5 生成物通常未挂载到 `Module`）。
+**烟测页**（需先执行两步打包，使 `artifacts/emcc-glue/shell.js` 存在）：
+
+- **`harness.html`**：空指针 / 零长度 API 调用。
+- **`fixture-harness.html`**：读 **`fixtures.json`** → **`wasm_video_config` / `wasm_video_chunk`**（真实 H.264 会解码，但本页不显示画面）。
+- **`decode-yuv-webgl.html`**：**同一 fixtures** → 解码 **I420**，**WebGL2** 三纹理（Y/U/V）+ **片元 shader YUV→BT.601 系 RGB**，在 `<canvas>` 上显示 **真实画面**（需 WebGL2 与已构建的解码 WASM）。
+
+写入 WASM 堆时请用全局 **`HEAPU8`**（或 `globalThis.HEAPU8`），不要用 `Module.HEAPU8`（Emscripten 5 生成物通常未挂载到 `Module`）。

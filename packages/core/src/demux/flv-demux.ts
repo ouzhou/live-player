@@ -1,16 +1,12 @@
+import type { FlvDemuxEvent, FlvDemuxParseResult } from "./demux-events.ts";
 import { audioSpecificConfigToCodecString } from "../codec-params/aac-codec-string.ts";
 import { avcDecoderConfigurationRecordToCodecString } from "../codec-params/avc-codec-string.ts";
+
+export type { FlvDemuxEvent, FlvDemuxParseResult } from "./demux-events.ts";
 
 const FLV_TAG_AUDIO = 8;
 const FLV_TAG_VIDEO = 9;
 const FLV_SOUND_FORMAT_AAC = 10;
-
-export type FlvDemuxEvent =
-  | { kind: "config"; ptsMs: number; description: Uint8Array; codec: string }
-  | { kind: "chunk"; ptsMs: number; data: Uint8Array; keyFrame: boolean }
-  | { kind: "audio_config"; ptsMs: number; description: Uint8Array; codec: string }
-  | { kind: "audio_chunk"; ptsMs: number; data: Uint8Array }
-  | { kind: "error"; message: string };
 
 function readU24BE(buf: Uint8Array, o: number): number {
   return (buf[o]! << 16) | (buf[o + 1]! << 8) | buf[o + 2]!;
@@ -43,7 +39,7 @@ function readCompositionTimeMs(buf: Uint8Array, o: number): number {
 export class FlvDemuxer {
   private headerDone = false;
 
-  parse(buffer: Uint8Array): { events: FlvDemuxEvent[]; consumed: number } {
+  parse(buffer: Uint8Array): FlvDemuxParseResult {
     const events: FlvDemuxEvent[] = [];
     let o = 0;
 

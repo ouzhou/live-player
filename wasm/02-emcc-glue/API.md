@@ -15,7 +15,7 @@
 
 约定：
 
-- 所有 `data` 均为 **连续字节**，由 JS 写入 WASM 堆（`Module._malloc` + `HEAPU8.set`）后传**指针**与 **长度**。
+- 所有 `data` 均为 **连续字节**，由 JS 写入 WASM 堆（`Module._malloc` + 全局 **`HEAPU8`.set / 下标写入**）后传**指针**与 **长度**。（Emscripten 5 生成物里 **`HEAPU8` 多为全局 TypedArray**，不一定挂在 `Module.HEAPU8`。）
 - **`codec` 字符串**首版可不进 WASM；若需要，可另增 `wasm_video_set_codec(const char*)` 或把字符串放在固定区。
 - C 边界上时间戳用 **`double pts_ms`**（与 demux 的 `ptsMs` 一致）；接入 WebCodecs 时再 `* 1000` 转微秒即可。
 

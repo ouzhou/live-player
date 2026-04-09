@@ -16,8 +16,10 @@
             var ver = Module.cwrap("wasm_get_version", "string", []);
             log("av_version_info: " + ver());
             log("wasm_init: " + Module._wasm_init());
+            // Emscripten 5+：HEAPU8 为全局视图，不在 Module 上（见生成的 shell.js / updateMemoryViews）
+            var heap = typeof HEAPU8 !== "undefined" ? HEAPU8 : Module.HEAPU8;
             var n = Module._malloc(1);
-            Module.HEAPU8[n] = 0;
+            heap[n] = 0;
             log("wasm_video_config(empty): " + Module._wasm_video_config(n, 0));
             Module._free(n);
             var chunk = Module.cwrap("wasm_video_chunk", "number", [

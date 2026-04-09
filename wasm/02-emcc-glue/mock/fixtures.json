@@ -1,0 +1,23 @@
+{
+  "$comment": "与 FlvDemuxer 事件语义对齐的占位数据；description/data 为 base64，便于在 harness 里还原为 Uint8Array。真实解码需替换为合法码流。",
+  "video_config": {
+    "codec": "avc1.42E01E",
+    "description_b64": "",
+    "note": "空串表示未放真实 AVC 序列头；联调时从真实 FLV 抓一条 config 的 description 填在此"
+  },
+  "video_chunk": {
+    "ptsMs": 0,
+    "keyFrame": true,
+    "data_b64": "",
+    "note": "空串占位；可换为单帧 NAL（与当前 VideoDecoder 收到的 data 一致）"
+  },
+  "audio_config": {
+    "description_b64": "",
+    "note": "ASC 二进制，base64"
+  },
+  "audio_chunk": {
+    "ptsMs": 0,
+    "data_b64": "",
+    "note": "AAC 帧负载"
+  }
+}

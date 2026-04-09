@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>minimal wasm shell</title>
+  </head>
+  <body>
+    <p id="status">loading…</p>
+    <script>
+      var Module = {
+        onRuntimeInitialized: function () {
+          document.getElementById("status").textContent = "instantiate OK (main 空壳 return 0)";
+        },
+      };
+    </script>
+    <!-- 与 shell.js / shell.wasm 同目录：见 wasm/artifacts/emcc-glue/ -->
+    <script async src="../artifacts/emcc-glue/shell.js"></script>
+  </body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>WASM API smoke test</title>
+  </head>
+  <body>
+    <pre id="log"></pre>
+    <script>
+      function log(msg) {
+        document.getElementById("log").textContent += msg + "\n";
+      }
+      var Module = {
+        onRuntimeInitialized: function () {
+          try {
+            var ver = Module.cwrap("wasm_get_version", "string", []);
+            log("av_version_info: " + ver());
+            log("wasm_init: " + Module._wasm_init());
+            var n = Module._malloc(1);
+            Module.HEAPU8[n] = 0;
+            log("wasm_video_config(empty): " + Module._wasm_video_config(n, 0));
+            Module._free(n);
+            var chunk = Module.cwrap("wasm_video_chunk", "number", [
+              "number",
+              "number",
+              "number",
+              "number",
+            ]);
+            log("wasm_video_chunk(empty): " + chunk(0, 0, 0, 0));
+            log("wasm_audio_config(0,0): " + Module._wasm_audio_config(0, 0));
+            var ach = Module.cwrap("wasm_audio_chunk", "number", ["number", "number", "number"]);
+            log("wasm_audio_chunk(empty): " + ach(0, 0, 0));
+            log("OK");
+          } catch (e) {
+            log("ERR: " + e);
+          }
+        },
+      };
+    </script>
+    <script src="../../artifacts/emcc-glue/shell.js"></script>
+  </body>
+</html>

@@ -2,6 +2,8 @@
 
 面向：**浏览器内**播放直播（典型如 HTTP-FLV、H.264）。说明各方案**是什么**、以及**数据如何一步步处理**（不解具体库名，只讲链路）。
 
+**与本仓库播放器架构的对照**（单路 demux、双解码后端、格式可分叉）：见 **[architecture-demux-decoders.md](./architecture-demux-decoders.md)**。
+
 ---
 
 ## 总览对比

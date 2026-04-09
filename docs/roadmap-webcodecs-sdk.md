@@ -4,6 +4,7 @@
 
 更细的方案对比与数据形态见同目录：
 
+- **[`architecture-demux-decoders.md`](./architecture-demux-decoders.md)**（**最新**：单 demux → WebCodecs / WASM 双路径；可选双 demux）
 - [`web-playback-mse-wasm-webcodecs.md`](./web-playback-mse-wasm-webcodecs.md)
 - [`http-flv-ffmpeg-wasm-pipeline.md`](./http-flv-ffmpeg-wasm-pipeline.md)
 

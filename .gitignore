@@ -28,3 +28,9 @@ dist-ssr
 
 # Local scripts, samples, and media (not versioned)
 push-command/
+
+# FFmpeg WASM / emcc 打包产物（见 wasm/PACKAGING.md）
+wasm/artifacts/
+# 旧路径（若本地仍有残留目录）
+docker/ffmpeg-wasm-h264-aac/out/
+wasm/minimal-shell/dist/

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { DEFAULT_WASM_SCRIPT_URL, LivePlayer, type DecodeMode } from "@live-player/core";
+import { LivePlayer, type DecodeMode } from "@live-player/core";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 
 const DEMO_FLV_URL = "http://localhost:8080/flv/live/test";
+
+/** 相对当前页面解析，避免 `/wasm/shell.js` 固定到站点根（子路径部署或 `file://` 打开 dist 时会 404） */
+function wasmScriptUrl(): string {
+  return new URL("wasm/shell.js", document.baseURI).href;
+}
 
 export function LivePlayerPanel() {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -42,7 +47,7 @@ export function LivePlayerPanel() {
       return new LivePlayer({
         container,
         decodeMode: "wasm",
-        wasmScriptUrl: DEFAULT_WASM_SCRIPT_URL,
+        wasmScriptUrl: wasmScriptUrl(),
         onError,
         onPlaying,
       });

@@ -9,6 +9,10 @@
 python3 wasm/02-emcc-glue/mock/tools/extract-fixtures-from-mp4.py /path/to/video.mp4 /path/to/out-dir
 ```
 
-产出：`avcC-from-mp4.bin`（与 `wasm_video_config` / WebCodecs `description` 同源）、`sample-annexb-short.h264`（短 Annex-B 元数据流）、`avcC-from-mp4.b64.txt`（单行 base64，便于粘进 `fixtures.json`）。
+产出：
+
+- `avcC-from-mp4.bin` / `avcC-from-mp4.b64.txt`：与 `wasm_video_config` / WebCodecs `description` 同源。
+- `sample-annexb-short.h264`：短 Annex-B 元数据流。
+- `chunk-first-idr-avcc.bin` / `chunk-first-idr-avcc.b64.txt`：**首个 IDR** 的 **4 字节长度大端 + NAL**，对应 `FlvDemuxEvent` 的 `chunk.data` / `wasm_video_chunk`（若前 0.2s 内无 IDR，会自动再扫 **前 2s** 并生成 `sample-annexb-2s.h264`）。
 
 **烟测页**：`harness.html`（需先执行两步打包，使 `artifacts/emcc-glue/shell.js` 存在）。写入 WASM 堆时请用全局 **`HEAPU8`**（或 `globalThis.HEAPU8`），不要用 `Module.HEAPU8`（Emscripten 5 生成物通常未挂载到 `Module`）。

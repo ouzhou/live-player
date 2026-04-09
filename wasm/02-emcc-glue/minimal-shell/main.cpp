@@ -33,6 +33,14 @@ int wasm_init() {
   return 0;
 }
 
+/** 释放资源；再播需重新 `wasm_init` 并送 config。见 API.md §5 */
+EMSCRIPTEN_KEEPALIVE
+int wasm_close() {
+  g_video_extradata.clear();
+  g_audio_extradata.clear();
+  return 0;
+}
+
 /** AVC sequence header：与 FlvDemuxer `config.description` 一致 */
 EMSCRIPTEN_KEEPALIVE
 int wasm_video_config(const uint8_t* data, int len) {

@@ -34,7 +34,7 @@ docker run --rm \
     -sENVIRONMENT=web \
     -sALLOW_MEMORY_GROWTH=1 \
     -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString \
-    "-sEXPORTED_FUNCTIONS=_malloc,_free,_wasm_get_version,_wasm_init,_wasm_video_config,_wasm_video_chunk,_wasm_audio_config,_wasm_audio_chunk" \
+    "-sEXPORTED_FUNCTIONS=_malloc,_free,_wasm_get_version,_wasm_init,_wasm_close,_wasm_video_config,_wasm_video_chunk,_wasm_audio_config,_wasm_audio_chunk" \
     -o "/work/wasm/artifacts/emcc-glue/shell.js"
 
 echo "OK: $DIST/shell.js + shell.wasm"

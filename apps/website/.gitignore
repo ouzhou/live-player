@@ -22,7 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Emscripten 构建产物（从 wasm/artifacts/emcc-glue 拷入，见 public/wasm/README.md）
-public/wasm/shell.js
-public/wasm/shell.wasm

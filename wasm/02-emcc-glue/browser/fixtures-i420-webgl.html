@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>H264 I420 → WebGL (YUV shader)</title>
+    <title>emcc glue — I420 → WebGL（YUV shader）</title>
     <style>
       body {
         font-family: system-ui, sans-serif;
@@ -62,10 +62,11 @@ uniform sampler2D u_v;
 in vec2 v_uv;
 out vec4 o_color;
 void main() {
-  float Y = texture(u_y, v_uv).r;
-  vec2 uv_s = v_uv;
-  float U = texture(u_u, uv_s).r - 0.5;
-  float V = texture(u_v, uv_s).r - 0.5;
+  // 解码器输出自上而下扫描；texImage2D 默认与 GL 纹理 t 轴相反，1-v 与屏幕一致
+  vec2 st = vec2(v_uv.x, 1.0 - v_uv.y);
+  float Y = texture(u_y, st).r;
+  float U = texture(u_u, st).r - 0.5;
+  float V = texture(u_v, st).r - 0.5;
   float r = Y + 1.402 * V;
   float g = Y - 0.344136 * U - 0.714136 * V;
   float b = Y + 1.772 * U;
@@ -104,7 +105,7 @@ void main() {
         onRuntimeInitialized: async function () {
           const st = document.getElementById("status");
           try {
-            const res = await fetch("./fixtures.json", { credentials: "same-origin" });
+            const res = await fetch("../mock/fixtures.json", { credentials: "same-origin" });
             if (!res.ok) throw new Error("fixtures.json " + res.status);
             const fx = await res.json();
 

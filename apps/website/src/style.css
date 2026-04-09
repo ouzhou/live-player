@@ -27,6 +27,39 @@ body {
   color: #9ca3af;
 }
 
+.decode-mode {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  background: #161922;
+}
+
+.decode-mode legend {
+  padding: 0 0.35rem;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+}
+
+.decode-mode__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.decode-mode__label {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.decode-mode__label input {
+  margin-top: 0.2rem;
+}
+
 .demo label {
   display: flex;
   flex-direction: column;

@@ -1,25 +1,42 @@
 import { AudioDecoderPipeline } from "../decoding/webcodecs/audio-decoder-pipeline.ts";
+import { VideoDecoderPipeline } from "../decoding/webcodecs/video-decoder-pipeline.ts";
+import { loadEmscriptenGlue } from "../decoding/wasm/emscripten-glue.ts";
+import { WasmVideoPipeline } from "../decoding/wasm/wasm-video-pipeline.ts";
 import { AudioPlayback } from "../playback/audio-playback.ts";
 import { GrowableBuffer } from "../util/byte-buffer.ts";
 import { FlvDemuxer } from "../demux/flv-demux.ts";
-import { VideoDecoderPipeline } from "../decoding/webcodecs/video-decoder-pipeline.ts";
+
+/** 视频解码后端：`webcodecs` 为浏览器硬解；`wasm` 为 FFmpeg WASM + WebGL2（I420）。 */
+export type DecodeMode = "webcodecs" | "wasm";
 
 export type PlayerOptions = {
   /** 容器元素（内部会创建 canvas）或直接传入 canvas */
   container: HTMLElement | HTMLCanvasElement;
   onError?: (err: Error) => void;
   onPlaying?: () => void;
+  /** 默认 `webcodecs` */
+  decodeMode?: DecodeMode;
+  /**
+   * `decodeMode: "wasm"` 时加载的 Emscripten `shell.js` URL（需与 `shell.wasm` 同目录）。
+   * 默认 `/wasm/shell.js`（由宿主放到 `public/wasm/`）。
+   */
+  wasmScriptUrl?: string;
 };
 
+/** @internal */
+export const DEFAULT_WASM_SCRIPT_URL = "/wasm/shell.js";
+
+type VideoPipeline = VideoDecoderPipeline | WasmVideoPipeline;
+
 /**
- * HTTP-FLV（H.264 + AAC）+ WebCodecs：拉流 → FLV demux → `VideoDecoder` / `AudioDecoder` → Canvas / Web Audio。
+ * HTTP-FLV（H.264 + AAC）：拉流 → FLV demux → 视频按 `decodeMode`（WebCodecs 或 WASM+WebGL）→ 音频 `AudioDecoder` → Web Audio。
  */
 export class LivePlayer {
   private readonly options: PlayerOptions;
   private readonly canvas: HTMLCanvasElement;
   private readonly ownsCanvas: boolean;
   private abortController: AbortController | null = null;
-  private pipeline: VideoDecoderPipeline | null = null;
+  private pipeline: VideoPipeline | null = null;
   private audioPipeline: AudioDecoderPipeline | null = null;
   private audioPlayback: AudioPlayback | null = null;
 
@@ -53,10 +70,19 @@ export class LivePlayer {
    */
   async play(url: string): Promise<void> {
     this.stopFetchOnly();
-    if (typeof globalThis.VideoDecoder === "undefined") {
+    const decodeMode = this.options.decodeMode ?? "webcodecs";
+    if (decodeMode === "webcodecs" && typeof globalThis.VideoDecoder === "undefined") {
       const err = new Error("VideoDecoder (WebCodecs) is not available in this environment");
       this.options.onError?.(err);
       throw err;
+    }
+    if (decodeMode === "wasm") {
+      const probe = document.createElement("canvas");
+      if (!probe.getContext("webgl2")) {
+        const err = new Error("WebGL2 is required for WASM decode mode");
+        this.options.onError?.(err);
+        throw err;
+      }
     }
     if (typeof globalThis.AudioDecoder === "undefined") {
       const err = new Error("AudioDecoder (WebCodecs) is not available in this environment");
@@ -69,10 +95,31 @@ export class LivePlayer {
 
     const buffer = new GrowableBuffer();
     const demux = new FlvDemuxer();
-    let pipeline: VideoDecoderPipeline | null = new VideoDecoderPipeline(this.canvas, (err) => {
-      this.options.onError?.(err);
-      ac.abort();
-    });
+    const wasmUrl = this.options.wasmScriptUrl ?? DEFAULT_WASM_SCRIPT_URL;
+
+    let pipeline: VideoPipeline | null = null;
+    if (decodeMode === "webcodecs") {
+      pipeline = new VideoDecoderPipeline(this.canvas, (err) => {
+        this.options.onError?.(err);
+        ac.abort();
+      });
+    } else {
+      try {
+        const mod = await loadEmscriptenGlue(wasmUrl);
+        pipeline = new WasmVideoPipeline(
+          this.canvas,
+          (err) => {
+            this.options.onError?.(err);
+            ac.abort();
+          },
+          mod,
+        );
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        this.options.onError?.(err);
+        throw err;
+      }
+    }
     this.pipeline = pipeline;
 
     const audioPlayback = new AudioPlayback();

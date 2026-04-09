@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <title>WASM + fixtures.json 烟测</title>
+    <title>emcc glue — fixtures.json → WASM 解码</title>
   </head>
   <body>
     <pre id="log"></pre>
@@ -30,7 +30,7 @@
         onRuntimeInitialized: async function () {
           try {
             const heap = typeof HEAPU8 !== "undefined" ? HEAPU8 : Module.HEAPU8;
-            const res = await fetch("./fixtures.json", { credentials: "same-origin" });
+            const res = await fetch("../mock/fixtures.json", { credentials: "same-origin" });
             if (!res.ok) throw new Error("fixtures.json HTTP " + res.status);
             const fx = await res.json();
 

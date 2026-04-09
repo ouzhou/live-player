@@ -31,6 +31,8 @@ push-command/
 
 # FFmpeg WASM / emcc 打包产物（见 wasm/PACKAGING.md）
 wasm/artifacts/
+# mock 提取脚本默认输出目录（与 mock/README 约定一致；fixtures.json 可另拷所需 b64）
+wasm/02-emcc-glue/mock/generated/
 # 旧路径（若本地仍有残留目录）
 docker/ffmpeg-wasm-h264-aac/out/
 wasm/minimal-shell/dist/

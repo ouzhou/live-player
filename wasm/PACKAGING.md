@@ -17,8 +17,8 @@ wasm/
 │   ├── build.sh                 步骤二：Docker 内 emcc
 │   ├── minimal-shell/
 │   │   └── main.cpp             解码器 C API（当前为桩）
-│   ├── mock/                    fixtures + harness 烟测
-│   └── test.html                最小加载烟测
+│   ├── mock/                    fixtures.json + 提取脚本
+│   └── browser/                 手动浏览器烟测 HTML（见 browser/README.md）
 └── artifacts/                   构建产物（已在仓库根 `.gitignore` 中忽略）
     ├── ffmpeg-static/           步骤一输出：usr/local/lib/*.a、include/
     └── emcc-glue/               步骤二输出：shell.js、shell.wasm
@@ -60,12 +60,16 @@ chmod +x wasm/02-emcc-glue/build.sh
 python3 -m http.server 8765
 ```
 
-| 页面     | URL                                    | 说明                                            |
-| -------- | -------------------------------------- | ----------------------------------------------- |
-| 最小加载 | `/wasm/02-emcc-glue/test.html`         | 仅验证 `Module` 初始化                          |
-| API 烟测 | `/wasm/02-emcc-glue/mock/harness.html` | 调用 `wasm_get_version` / `wasm_init` / 各 stub |
+| 页面          | URL                                                   | 说明                                           |
+| ------------- | ----------------------------------------------------- | ---------------------------------------------- |
+| 最小加载      | `/wasm/02-emcc-glue/browser/load.html`                | 仅验证 `Module` 初始化                         |
+| API 烟测      | `/wasm/02-emcc-glue/browser/api-smoke.html`           | `wasm_get_version` / `wasm_init` / 空包各 stub |
+| fixtures 解码 | `/wasm/02-emcc-glue/browser/fixtures-decode.html`     | 读 `mock/fixtures.json` → 解码路径（无画面）   |
+| I420 → WebGL  | `/wasm/02-emcc-glue/browser/fixtures-i420-webgl.html` | 同上 + `wasm_copy_i420` → WebGL 画面           |
 
-参数约定与 mock 数据说明见 **[02-emcc-glue/API.md](./02-emcc-glue/API.md)**、**[02-emcc-glue/mock/README.md](./02-emcc-glue/mock/README.md)**。
+完整列表见 **[02-emcc-glue/browser/README.md](./02-emcc-glue/browser/README.md)**。参数约定与 mock 数据见 **[02-emcc-glue/API.md](./02-emcc-glue/API.md)**、**[02-emcc-glue/mock/README.md](./02-emcc-glue/mock/README.md)**。
+
+**`apps/website`（`decodeMode: "wasm"`）**：将 **`shell.js` / `shell.wasm`** 拷到 **`apps/website/public/wasm/`**，使开发服务器能请求 **`/wasm/shell.js`**（见该目录下 `README.md`）。
 
 ---
 

@@ -30,6 +30,7 @@
             log("wasm_audio_config(0,0): " + Module._wasm_audio_config(0, 0));
             var ach = Module.cwrap("wasm_audio_chunk", "number", ["number", "number", "number"]);
             log("wasm_audio_chunk(empty): " + ach(0, 0, 0));
+            log("wasm_close: " + Module._wasm_close());
             log("OK");
           } catch (e) {
             log("ERR: " + e);

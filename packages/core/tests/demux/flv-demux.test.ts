@@ -1,7 +1,7 @@
 import { expect, test } from "vite-plus/test";
-import { audioSpecificConfigToCodecString } from "../src/aac-codec-string.ts";
-import { avcDecoderConfigurationRecordToCodecString } from "../src/avc-codec-string.ts";
-import { FlvDemuxer } from "../src/flv-demux.ts";
+import { audioSpecificConfigToCodecString } from "../../src/codec-params/aac-codec-string.ts";
+import { avcDecoderConfigurationRecordToCodecString } from "../../src/codec-params/avc-codec-string.ts";
+import { FlvDemuxer } from "../../src/demux/flv-demux.ts";
 
 function writeU24BE(buf: Uint8Array, o: number, v: number): void {
   buf[o] = (v >> 16) & 0xff;

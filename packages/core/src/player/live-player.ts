@@ -1,8 +1,8 @@
-import { AudioDecoderPipeline } from "./audio-decoder-pipeline.ts";
-import { AudioPlayback } from "./audio-playback.ts";
-import { GrowableBuffer } from "./byte-buffer.ts";
-import { FlvDemuxer } from "./flv-demux.ts";
-import { VideoDecoderPipeline } from "./video-decoder-pipeline.ts";
+import { AudioDecoderPipeline } from "../decoding/webcodecs/audio-decoder-pipeline.ts";
+import { AudioPlayback } from "../playback/audio-playback.ts";
+import { GrowableBuffer } from "../util/byte-buffer.ts";
+import { FlvDemuxer } from "../demux/flv-demux.ts";
+import { VideoDecoderPipeline } from "../decoding/webcodecs/video-decoder-pipeline.ts";
 
 export type PlayerOptions = {
   /** 容器元素（内部会创建 canvas）或直接传入 canvas */

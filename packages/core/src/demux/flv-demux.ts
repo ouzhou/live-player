@@ -1,5 +1,5 @@
-import { audioSpecificConfigToCodecString } from "./aac-codec-string.ts";
-import { avcDecoderConfigurationRecordToCodecString } from "./avc-codec-string.ts";
+import { audioSpecificConfigToCodecString } from "../codec-params/aac-codec-string.ts";
+import { avcDecoderConfigurationRecordToCodecString } from "../codec-params/avc-codec-string.ts";
 
 const FLV_TAG_AUDIO = 8;
 const FLV_TAG_VIDEO = 9;

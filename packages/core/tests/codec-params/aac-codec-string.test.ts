@@ -2,7 +2,7 @@ import { expect, test } from "vite-plus/test";
 import {
   audioSpecificConfigToCodecString,
   audioSpecificConfigToDecoderParams,
-} from "../src/aac-codec-string.ts";
+} from "../../src/codec-params/aac-codec-string.ts";
 
 test("maps 2-byte ASC to mp4a.40.2", () => {
   const asc = new Uint8Array([0x12, 0x10]);

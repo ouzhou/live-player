@@ -1,1 +1,1 @@
-export { LivePlayer, type PlayerOptions } from "./live-player.ts";
+export { LivePlayer, type PlayerOptions } from "./player/live-player.ts";

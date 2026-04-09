@@ -1,4 +1,4 @@
-import { audioSpecificConfigToDecoderParams } from "./aac-codec-string.ts";
+import { audioSpecificConfigToDecoderParams } from "../../codec-params/aac-codec-string.ts";
 
 /**
  * WebCodecs `AudioDecoder` 薄封装；`AudioData` 交给回调，**不在此处 `close()`**（由 `AudioPlayback` 消费后关闭）。

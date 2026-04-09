@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { avcDecoderConfigurationRecordToCodecString } from "../src/avc-codec-string.ts";
+import { avcDecoderConfigurationRecordToCodecString } from "../../src/codec-params/avc-codec-string.ts";
 
 test("maps fixed avcC bytes to avc1 codec string", () => {
   const avcC = new Uint8Array([

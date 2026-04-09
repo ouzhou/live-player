@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { GrowableBuffer } from "../src/byte-buffer.ts";
+import { GrowableBuffer } from "../../src/util/byte-buffer.ts";
 
 test("GrowableBuffer append then consume compacts", () => {
   const b = new GrowableBuffer(4);

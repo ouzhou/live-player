@@ -1,46 +1,53 @@
-import { Clapperboard, Radio, Sparkles } from "lucide-react";
+import { Clapperboard, ExternalLink, Radio, Sparkles } from "lucide-react";
 
 import { LivePlayerPanel } from "@/components/live-player-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+const REPO_URL = "https://github.com/ouzhou/live-player";
+
 export default function App() {
   return (
-    <div className="relative min-h-svh overflow-hidden bg-background">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,oklch(0.55_0.22_264/0.35),transparent_55%),radial-gradient(ellipse_80%_50%_at_100%_50%,oklch(0.45_0.15_200/0.12),transparent_50%)]"
-      />
-      <div className="relative mx-auto flex min-h-svh max-w-3xl flex-col gap-8 px-4 py-12 sm:px-6 sm:py-16">
-        <header className="space-y-3 text-center sm:text-left">
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-            <Badge className="gap-1 font-normal" variant="secondary">
-              <Sparkles className="size-3.5" aria-hidden />
-              HTTP-FLV
-            </Badge>
-            <Badge className="gap-1 font-normal" variant="outline">
-              <Radio className="size-3.5" aria-hidden />
-              WebCodecs / WASM
-            </Badge>
+    <div className="bg-zinc-50 text-foreground">
+      <div className="mx-auto flex min-h-svh max-w-3xl flex-col gap-8 px-4 py-10 sm:gap-10 sm:px-6 sm:py-14">
+        <header className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="gap-1 font-normal" variant="secondary">
+                <Sparkles className="size-3.5" aria-hidden />
+                HTTP-FLV
+              </Badge>
+              <Badge className="gap-1 font-normal" variant="outline">
+                <Radio className="size-3.5" aria-hidden />
+                WebCodecs / WASM
+              </Badge>
+            </div>
+            <a
+              className="text-muted-foreground hover:text-foreground inline-flex w-fit items-center gap-2 text-sm underline-offset-4 transition-colors hover:underline"
+              href={REPO_URL}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <ExternalLink className="size-4 shrink-0" aria-hidden />
+              ouzhou/live-player
+            </a>
           </div>
-          <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-end sm:gap-4">
-            <div className="flex items-center gap-3">
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
-                <Clapperboard className="size-6" aria-hidden />
-              </span>
-              <div className="text-left">
-                <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-                  LivePlayer
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  在浏览器中播放直播流，支持 WebCodecs 与 WASM 两种解码路径。
-                </p>
-              </div>
+          <div className="flex items-start gap-3">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md">
+              <Clapperboard className="size-6" aria-hidden />
+            </span>
+            <div>
+              <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+                LivePlayer
+              </h1>
+              <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+                在浏览器中播放直播流，支持 WebCodecs 与 WASM 两种解码路径。
+              </p>
             </div>
           </div>
         </header>
 
-        <Card className="border-border/80 shadow-xl shadow-black/20">
+        <Card className="border-border shadow-md">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-lg">播放演示</CardTitle>
             <CardDescription>

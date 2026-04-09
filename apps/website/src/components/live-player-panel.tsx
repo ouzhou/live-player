@@ -147,13 +147,13 @@ export function LivePlayerPanel() {
         </Button>
       </div>
 
-      <p className="min-h-[1.25rem] text-sm text-emerald-600 dark:text-emerald-400" role="status">
+      <p className="min-h-[1.25rem] text-sm text-emerald-700" role="status">
         {status}
       </p>
 
       <div
         ref={hostRef}
-        className="bg-muted/40 min-h-[200px] w-full overflow-hidden rounded-xl border"
+        className="bg-muted/50 aspect-video min-h-[200px] w-full overflow-hidden rounded-xl border"
       />
     </div>
   );

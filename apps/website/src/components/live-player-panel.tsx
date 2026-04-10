@@ -17,18 +17,15 @@ import { Separator } from "@/components/ui/separator";
 
 const DEMO_FLV_URL = "http://localhost:8080/flv/live/test";
 
-/** Resolve relative to the current page so `/wasm/shell.js` is not pinned to site root (avoids 404 on subpath deploys or `file://` dist). */
-function wasmScriptUrl(): string {
-  return new URL("wasm/shell.js", document.baseURI).href;
-}
-
 export function LivePlayerPanel() {
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<LivePlayer | null>(null);
   const playerDecodeModeRef = useRef<DecodeMode | null>(null);
   const playerVideoHintRef = useRef<VideoCodecHint | null>(null);
+  const playerWasmUrlRef = useRef<string | null>(null);
 
   const [url, setUrl] = useState(DEMO_FLV_URL);
+  const [wasmUrl, setWasmUrl] = useState(() => new URL("wasm/shell.js", document.baseURI).href);
   const [videoCodec, setVideoCodec] = useState<VideoCodecHint>("auto");
   const [decodeMode, setDecodeMode] = useState<DecodeMode>("auto");
   const [status, setStatus] = useState("");
@@ -41,64 +38,73 @@ export function LivePlayerPanel() {
     playerRef.current = null;
     playerDecodeModeRef.current = null;
     playerVideoHintRef.current = null;
+    playerWasmUrlRef.current = null;
     setStreamActive(false);
   }, []);
 
   useEffect(() => () => destroyPlayer(), [destroyPlayer]);
 
-  const buildPlayer = useCallback((mode: DecodeMode, hint: VideoCodecHint): LivePlayer => {
-    const container = hostRef.current;
-    if (!container) {
-      throw new Error("Player container is not ready");
-    }
-    const onError = (err: Error) => {
-      setStreamActive(false);
-      setStatus(`Error: ${err.message}`);
-    };
-    const onPlaying = () => {
-      setStreamActive(true);
-      if (mode === "auto") {
-        setStatus("Stream connected…");
-      } else if (mode === "wasm") {
-        setStatus("Stream connected (WASM video + WebGL)");
-      } else {
-        setStatus("Stream connected (WebCodecs)");
+  const buildPlayer = useCallback(
+    (mode: DecodeMode, hint: VideoCodecHint): LivePlayer => {
+      const container = hostRef.current;
+      if (!container) {
+        throw new Error("Player container is not ready");
       }
-    };
-    return new LivePlayer({
-      container,
-      decodeMode: mode,
-      wasmScriptUrl: wasmScriptUrl(),
-      videoCodecHint: hint,
-      onError,
-      onPlaying,
-      onVideoBackend:
-        mode === "auto"
-          ? (b) =>
-              setStatus(
-                b === "webcodecs"
-                  ? "Stream connected (auto: WebCodecs)"
-                  : "Stream connected (auto: WASM)",
-              )
-          : undefined,
-    });
-  }, []);
+      const onError = (err: Error) => {
+        setStreamActive(false);
+        setStatus(`Error: ${err.message}`);
+      };
+      const onPlaying = () => {
+        setStreamActive(true);
+        if (mode === "auto") {
+          setStatus("Stream connected…");
+        } else if (mode === "wasm") {
+          setStatus("Stream connected (WASM video + WebGL)");
+        } else {
+          setStatus("Stream connected (WebCodecs)");
+        }
+      };
+      const script = wasmUrl.trim() || new URL("wasm/shell.js", document.baseURI).href;
+      return new LivePlayer({
+        container,
+        decodeMode: mode,
+        wasmScriptUrl: script,
+        videoCodecHint: hint,
+        onError,
+        onPlaying,
+        onVideoBackend:
+          mode === "auto"
+            ? (b) =>
+                setStatus(
+                  b === "webcodecs"
+                    ? "Stream connected (auto: WebCodecs)"
+                    : "Stream connected (auto: WASM)",
+                )
+            : undefined,
+      });
+    },
+    [wasmUrl],
+  );
 
   const ensurePlayer = useCallback((): LivePlayer => {
     const mode = decodeMode;
+    const wasmKey = wasmUrl.trim();
     if (
       playerRef.current &&
-      (playerDecodeModeRef.current !== mode || playerVideoHintRef.current !== videoCodec)
+      (playerDecodeModeRef.current !== mode ||
+        playerVideoHintRef.current !== videoCodec ||
+        playerWasmUrlRef.current !== wasmKey)
     ) {
       destroyPlayer();
     }
     if (!playerRef.current) {
       playerDecodeModeRef.current = mode;
       playerVideoHintRef.current = videoCodec;
+      playerWasmUrlRef.current = wasmKey;
       playerRef.current = buildPlayer(mode, videoCodec);
     }
     return playerRef.current;
-  }, [buildPlayer, decodeMode, destroyPlayer, videoCodec]);
+  }, [buildPlayer, decodeMode, destroyPlayer, videoCodec, wasmUrl]);
 
   const handleDecodeChange = useCallback(
     (value: string | null) => {
@@ -267,6 +273,43 @@ export function LivePlayerPanel() {
                 </label>
               </div>
             </RadioGroup>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <Label htmlFor="wasm-script-url">WASM glue (shell.js) URL</Label>
+            <Input
+              id="wasm-script-url"
+              name="wasmScriptUrl"
+              type="url"
+              autoComplete="off"
+              inputMode="url"
+              className="h-11 rounded-2xl bg-white px-4 text-sm"
+              spellCheck={false}
+              value={wasmUrl}
+              onChange={(e) => {
+                setWasmUrl(e.target.value);
+                destroyPlayer();
+                setStatus("WASM URL changed — press Play again");
+              }}
+              placeholder="/wasm/shell.js or full https://…"
+            />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              To reduce{" "}
+              <strong className="font-medium text-foreground">patent and licensing exposure</strong>{" "}
+              from shipping a software decoder for{" "}
+              <strong className="font-medium text-foreground">H.265 (HEVC)</strong> on the web, this
+              demo plays H.265 only via the browser{" "}
+              <strong className="font-medium text-foreground">WebCodecs</strong> path—there is no
+              HEVC software decode inside WASM. Use this URL to load the Emscripten glue (
+              <code className="rounded bg-muted px-1 py-0.5">shell.js</code>, next to{" "}
+              <code className="rounded bg-muted px-1 py-0.5">shell.wasm</code>) that contains{" "}
+              <strong className="font-medium text-foreground">H.264 soft-decode only</strong>, for
+              Auto / WASM fallback when needed. Build from{" "}
+              <code className="rounded bg-muted px-1 py-0.5">wasm/PACKAGING.md</code>, then paste or
+              deploy to a reachable URL.
+            </p>
           </div>
 
           <Separator />

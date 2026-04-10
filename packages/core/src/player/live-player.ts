@@ -50,13 +50,10 @@ export type PlayerOptions = {
   videoCodecHint?: VideoCodecHint;
   /**
    * `decodeMode` 为 `wasm` 或 `auto` 回落到 WASM 时加载的 Emscripten `shell.js` URL（需与 `shell.wasm` 同目录）。
-   * 默认 `/wasm/shell.js`（由宿主放到 `public/wasm/`）。
+   * 基于合规与免责声明，本库不含任何 H.265/HEVC FFmpeg WASM 实体文件，需由使用方自行编译并全权提供此 `wasmScriptUrl`。
    */
   wasmScriptUrl?: string;
 };
-
-/** @internal */
-export const DEFAULT_WASM_SCRIPT_URL = "/wasm/shell.js";
 
 type VideoPipeline = VideoDecoderPipeline | WasmVideoPipeline;
 
@@ -153,7 +150,7 @@ export class LivePlayer {
 
     const buffer = new GrowableBuffer();
     const demux = new FlvDemuxer();
-    const wasmUrl = this.options.wasmScriptUrl ?? DEFAULT_WASM_SCRIPT_URL;
+    const wasmUrl = this.options.wasmScriptUrl;
 
     let pipeline: VideoPipeline | null = null;
     const preVideoQueue: FlvDemuxEvent[] = [];
@@ -166,6 +163,9 @@ export class LivePlayer {
       this.pipeline = pipeline;
     } else if (decodeMode === "wasm") {
       try {
+        if (!wasmUrl) {
+          throw new Error("使用 wasm 解码模式时必须通过 wasmScriptUrl 提供 FFmpeg wasm 路径。");
+        }
         const mod = await loadEmscriptenGlue(wasmUrl);
         pipeline = new WasmVideoPipeline(
           this.canvas,
@@ -208,6 +208,9 @@ export class LivePlayer {
 
     const createWasmPipeline = async (): Promise<WasmVideoPipeline> => {
       assertWebGl2ForWasm();
+      if (!wasmUrl) {
+        throw new Error("使用 wasm 解码模式时必须通过 wasmScriptUrl 提供 FFmpeg wasm 路径。");
+      }
       const mod = await loadEmscriptenGlue(wasmUrl);
       return new WasmVideoPipeline(this.canvas, videoError, mod);
     };

@@ -2,7 +2,7 @@
 
 **Languages:** [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Français](README.fr.md)
 
-Experimental **HTTP-FLV** player SDK: **H.264 and H.265 (HEVC)** video, **AAC** audio. Custom FLV demuxer (including legacy H.265, Enhanced RTMP, etc.), **WebCodecs** output to Canvas / Web Audio; optional **WASM + WebGL** for video. This repo is a **pnpm workspace** and uses **Vite+** (`vp`) as the toolchain.
+Experimental **HTTP-FLV** player SDK: **H.264 and H.265 (HEVC)** video, **AAC** audio. Custom FLV demuxer (including legacy H.265, Enhanced RTMP, etc.), **WebCodecs** output to Canvas / Web Audio; optional **self-built** FFmpeg **WASM + WebGL** for H.264 soft-decode only (see [`wasm/PACKAGING.md`](wasm/PACKAGING.md)). **Prebuilt `shell.js` / `shell.wasm` are not shipped in this repo** (H.265 is played via WebCodecs in the demo to limit patent/licensing surface). **`@live-player/core` is not published to the npm registry.** This repo is a **pnpm workspace** and uses **Vite+** (`vp`) as the toolchain.
 
 ## Live demo
 
@@ -11,18 +11,14 @@ Experimental **HTTP-FLV** player SDK: **H.264 and H.265 (HEVC)** video, **AAC** 
 ## Features
 
 - HTTP-FLV pull, custom demux, **H.264 / H.265** on one pipeline
-- Video **`decodeMode`**: `auto` (switch WebCodecs ↔ WASM after first frame) | `webcodecs` | `wasm` (requires `public/wasm`)
+- Video **`decodeMode`**: `auto` (WebCodecs ↔ WASM after first frame when WASM is present) | `webcodecs` | `wasm` (requires locally built assets under the host’s `public/wasm/` or a custom `wasmScriptUrl`; not bundled here)
 - Audio: WebCodecs `AudioDecoder` + Web Audio
 - **`videoCodecHint`** (`auto` / `avc` / `hevc`), **`probeHttpFlv`** (read stream header only, no decode)
 - **`apps/website`**: React + Tailwind v4 + shadcn/ui demo, imports `@live-player/core` source directly
 
 ## Using in your project
 
-### Install
-
-```bash
-pnpm add @live-player/core
-```
+There is **no npm package**: **`@live-player/core` is not published.** Use this monorepo as a workspace, `pnpm link`, a Git URL, or vendor `packages/core` in your own repo.
 
 ### Minimal example
 
@@ -37,7 +33,7 @@ For full examples (probing, callbacks, stop, etc.) see **[`docs/using-live-playe
 
 ## Architecture
 
-**Layers**: `apps/website` → **`@live-player/core`**; [`wasm/`](wasm/) build output goes in the host app’s **`public/wasm/`** (or `wasmScriptUrl`).
+**Layers**: `apps/website` → **`@live-player/core`**; if you build WASM yourself, copy [`wasm/`](wasm/) output into the host app’s **`public/wasm/`** (or set `wasmScriptUrl`). Nothing under `public/wasm/` is committed as a distributable binary here.
 
 **Pipeline**: HTTP streaming → **`FlvDemuxer`** → video **WebCodecs or WASM**, audio **WebCodecs** → Canvas / Web Audio. Design notes and H.265 FLV details: [`docs/architecture-demux-decoders.md`](docs/architecture-demux-decoders.md), [`docs/superpowers/specs/2026-04-10-hevc-flv-dual-format-design.md`](docs/superpowers/specs/2026-04-10-hevc-flv-dual-format-design.md).
 

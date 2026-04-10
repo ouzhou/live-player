@@ -1,5 +1,4 @@
 export {
-  DEFAULT_WASM_SCRIPT_URL,
   LivePlayer,
   type DecodeMode,
   type PlayerOptions,

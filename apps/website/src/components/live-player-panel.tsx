@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 
 const DEMO_FLV_URL = "http://localhost:8080/flv/live/test";
 
-/** 相对当前页面解析，避免 `/wasm/shell.js` 固定到站点根（子路径部署或 `file://` 打开 dist 时会 404） */
+/** Resolve relative to the current page so `/wasm/shell.js` is not pinned to site root (avoids 404 on subpath deploys or `file://` dist). */
 function wasmScriptUrl(): string {
   return new URL("wasm/shell.js", document.baseURI).href;
 }
@@ -49,20 +49,20 @@ export function LivePlayerPanel() {
   const buildPlayer = useCallback((mode: DecodeMode, hint: VideoCodecHint): LivePlayer => {
     const container = hostRef.current;
     if (!container) {
-      throw new Error("播放器容器未就绪");
+      throw new Error("Player container is not ready");
     }
     const onError = (err: Error) => {
       setStreamActive(false);
-      setStatus(`错误: ${err.message}`);
+      setStatus(`Error: ${err.message}`);
     };
     const onPlaying = () => {
       setStreamActive(true);
       if (mode === "auto") {
-        setStatus("已连接流…");
+        setStatus("Stream connected…");
       } else if (mode === "wasm") {
-        setStatus("已连接流（WASM 视频 + WebGL）");
+        setStatus("Stream connected (WASM video + WebGL)");
       } else {
-        setStatus("已连接流（WebCodecs 硬解）");
+        setStatus("Stream connected (WebCodecs)");
       }
     };
     return new LivePlayer({
@@ -76,7 +76,9 @@ export function LivePlayerPanel() {
         mode === "auto"
           ? (b) =>
               setStatus(
-                b === "webcodecs" ? "已连接流（自动：WebCodecs）" : "已连接流（自动：WASM）",
+                b === "webcodecs"
+                  ? "Stream connected (auto: WebCodecs)"
+                  : "Stream connected (auto: WASM)",
               )
           : undefined,
     });
@@ -103,7 +105,7 @@ export function LivePlayerPanel() {
       if (value !== "wasm" && value !== "webcodecs" && value !== "auto") return;
       setDecodeMode(value);
       destroyPlayer();
-      setStatus("已切换解码方式，请再次点击播放");
+      setStatus("Decode mode changed — press Play again");
     },
     [destroyPlayer],
   );
@@ -113,7 +115,7 @@ export function LivePlayerPanel() {
       if (value !== "avc" && value !== "hevc" && value !== "auto") return;
       setVideoCodec(value);
       destroyPlayer();
-      setStatus("已切换视频编码，请再次点击播放");
+      setStatus("Video codec hint changed — press Play again");
     },
     [destroyPlayer],
   );
@@ -121,43 +123,43 @@ export function LivePlayerPanel() {
   const handlePlay = async () => {
     const trimmed = url.trim();
     if (!trimmed) {
-      setStatus("请填写 URL");
+      setStatus("Enter a URL");
       return;
     }
     setStreamActive(false);
-    setStatus("请求中…");
+    setStatus("Connecting…");
     try {
       await ensurePlayer().play(trimmed);
     } catch {
-      /* onError 已报 */
+      /* onError reports */
     }
   };
 
   const handleDestroy = () => {
     destroyPlayer();
-    setStatus("已停止");
+    setStatus("Stopped");
   };
 
   const handleProbe = async () => {
     const trimmed = url.trim();
     if (!trimmed) {
-      setProbeInfo("请填写 URL");
+      setProbeInfo("Enter a URL");
       return;
     }
     setProbeBusy(true);
-    setProbeInfo("探测中…");
+    setProbeInfo("Probing…");
     try {
       const r = await probeHttpFlv(trimmed);
       const lines: string[] = [];
       if (r.video) {
-        lines.push(`视频（WebCodecs codec）: ${r.video.codec}`);
+        lines.push(`Video (WebCodecs codec): ${r.video.codec}`);
         const v = r.video.codec;
         const kind = v.startsWith("avc1")
           ? "H.264/AVC"
           : v.startsWith("hev1") || v.startsWith("hvc1")
             ? "H.265/HEVC"
-            : "未知";
-        lines.push(`  → 识别为: ${kind}`);
+            : "unknown";
+        lines.push(`  → Detected as: ${kind}`);
         if (typeof VideoDecoder !== "undefined") {
           try {
             const sup = await VideoDecoder.isConfigSupported({
@@ -165,25 +167,25 @@ export function LivePlayerPanel() {
               description: r.video.description,
             });
             lines.push(
-              `  → 当前环境 VideoDecoder: ${sup.supported ? "支持该配置" : "不支持该配置"}`,
+              `  → VideoDecoder in this browser: ${sup.supported ? "config supported" : "config not supported"}`,
             );
           } catch {
-            lines.push("  → VideoDecoder.isConfigSupported 调用失败");
+            lines.push("  → VideoDecoder.isConfigSupported failed");
           }
         } else {
-          lines.push("  → 无 VideoDecoder API，跳过硬解探测");
+          lines.push("  → No VideoDecoder API; skipped hardware decode check");
         }
       } else {
-        lines.push("视频: （未解析到序列头）");
+        lines.push("Video: (no sequence header parsed)");
       }
       if (r.audio) {
-        lines.push(`音频（WebCodecs codec）: ${r.audio.codec}`);
+        lines.push(`Audio (WebCodecs codec): ${r.audio.codec}`);
         if (typeof AudioDecoder !== "undefined") {
           try {
             const { codec, numberOfChannels, sampleRate } = audioSpecificConfigToDecoderParams(
               r.audio.description,
             );
-            lines.push(`  → 采样率 ${sampleRate} Hz，声道 ${numberOfChannels}`);
+            lines.push(`  → Sample rate ${sampleRate} Hz, channels ${numberOfChannels}`);
             const sup = await AudioDecoder.isConfigSupported({
               codec,
               description: r.audio.description,
@@ -191,24 +193,24 @@ export function LivePlayerPanel() {
               sampleRate,
             });
             lines.push(
-              `  → 当前环境 AudioDecoder: ${sup.supported ? "支持该配置" : "不支持该配置"}`,
+              `  → AudioDecoder in this browser: ${sup.supported ? "config supported" : "config not supported"}`,
             );
           } catch (e) {
             lines.push(
-              `  → AudioDecoder.isConfigSupported 调用失败: ${e instanceof Error ? e.message : String(e)}`,
+              `  → AudioDecoder.isConfigSupported failed: ${e instanceof Error ? e.message : String(e)}`,
             );
           }
         } else {
-          lines.push("  → 无 AudioDecoder API，跳过探测");
+          lines.push("  → No AudioDecoder API; skipped");
         }
       } else {
-        lines.push("音频: （未解析到 AudioSpecificConfig）");
+        lines.push("Audio: (no AudioSpecificConfig parsed)");
       }
-      lines.push(`已读取: ${r.bytesRead} 字节`);
+      lines.push(`Bytes read: ${r.bytesRead}`);
       if (r.ok) {
-        lines.unshift("状态: 已识别音视频轨");
+        lines.unshift("Status: audio and video tracks identified");
       } else {
-        lines.unshift(`状态: 未完成${r.error ? `（${r.error}）` : ""}`);
+        lines.unshift(`Status: incomplete${r.error ? ` (${r.error})` : ""}`);
       }
       setProbeInfo(lines.join("\n"));
     } catch (e) {
@@ -225,11 +227,13 @@ export function LivePlayerPanel() {
     >
       <Card className="min-w-0 border border-border bg-card py-0 shadow-lg">
         <CardHeader className="border-b border-border px-5 py-4 sm:px-6 sm:py-5">
-          <CardTitle className="text-lg font-semibold tracking-tight sm:text-xl">配置</CardTitle>
+          <CardTitle className="text-lg font-semibold tracking-tight sm:text-xl">
+            Settings
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6 px-5 py-5 sm:px-6">
           <div className="space-y-3">
-            <p className="text-sm font-medium text-foreground">视频解码</p>
+            <p className="text-sm font-medium text-foreground">Video decode</p>
             <RadioGroup
               className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6"
               value={decodeMode}
@@ -241,7 +245,7 @@ export function LivePlayerPanel() {
                   className="cursor-pointer text-sm font-medium leading-none"
                   htmlFor="decode-auto"
                 >
-                  自动
+                  Auto
                 </label>
               </div>
               <div className="flex items-center gap-3">
@@ -268,7 +272,7 @@ export function LivePlayerPanel() {
           <Separator />
 
           <div className="space-y-3">
-            <p className="text-sm font-medium text-foreground">视频编码</p>
+            <p className="text-sm font-medium text-foreground">Video codec</p>
             <RadioGroup
               className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6"
               value={videoCodec}
@@ -280,7 +284,7 @@ export function LivePlayerPanel() {
                   className="cursor-pointer text-sm font-medium leading-none"
                   htmlFor="video-auto"
                 >
-                  自动
+                  Auto
                 </label>
               </div>
               <div className="flex items-center gap-3">
@@ -308,7 +312,7 @@ export function LivePlayerPanel() {
             <>
               <Separator />
               <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">检测信息</p>
+                <p className="text-sm font-medium text-foreground">Probe output</p>
                 <pre className="max-h-64 overflow-auto rounded-2xl border bg-white p-3 text-left text-xs leading-relaxed whitespace-pre-wrap text-foreground sm:p-4">
                   {probeInfo}
                 </pre>
@@ -320,7 +324,7 @@ export function LivePlayerPanel() {
 
       <Card className="min-w-0 border border-border bg-card py-0 shadow-lg lg:sticky lg:top-6">
         <CardHeader className="space-y-0.5 border-b border-border px-5 py-4 sm:px-6 sm:py-5">
-          <CardTitle className="text-lg font-semibold tracking-tight sm:text-xl">画面</CardTitle>
+          <CardTitle className="text-lg font-semibold tracking-tight sm:text-xl">Player</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 p-4 sm:p-5">
           <div className="space-y-2">
@@ -344,7 +348,7 @@ export function LivePlayerPanel() {
                   type="button"
                   onClick={() => void handlePlay()}
                 >
-                  播放
+                  Play
                 </Button>
                 <Button
                   className="h-11 rounded-full px-4"
@@ -352,7 +356,7 @@ export function LivePlayerPanel() {
                   variant="outline"
                   onClick={handleDestroy}
                 >
-                  停止
+                  Stop
                 </Button>
                 <Button
                   className="h-11 rounded-full border-input bg-white px-4"
@@ -361,7 +365,7 @@ export function LivePlayerPanel() {
                   disabled={probeBusy}
                   onClick={() => void handleProbe()}
                 >
-                  {probeBusy ? "检测中…" : "检测流"}
+                  {probeBusy ? "Probing…" : "Probe stream"}
                 </Button>
               </div>
             </div>
@@ -375,7 +379,7 @@ export function LivePlayerPanel() {
             <div ref={hostRef} className="absolute inset-0 min-h-0 min-w-0" />
             {!streamActive ? (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span className="text-sm text-zinc-500">未连接流</span>
+                <span className="text-sm text-zinc-500">No stream</span>
               </div>
             ) : null}
           </div>

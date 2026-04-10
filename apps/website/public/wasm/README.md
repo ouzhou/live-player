@@ -1,12 +1,12 @@
-# WASM 胶水
+# WASM glue
 
-`decodeMode: "wasm"` 时，`LivePlayer` 会请求 **`/wasm/shell.js`**（及同目录 **`shell.wasm`**）。
+When `decodeMode: "wasm"`, `LivePlayer` loads **`/wasm/shell.js`** (and **`shell.wasm`** in the same directory).
 
-**`shell.js` / `shell.wasm` 已纳入版本控制**，保证线上构建无需本地 Docker 即可提供静态资源。
+**`shell.js` / `shell.wasm` are checked in** so production builds can serve static assets without local Docker.
 
-更新 WASM 时：
+To refresh WASM:
 
-1. 按 [wasm/PACKAGING.md](../../../wasm/PACKAGING.md) 执行步骤一、二。
-2. 将 **`wasm/artifacts/emcc-glue/shell.js`** 与 **`shell.wasm`** 复制到本目录并提交。
+1. Follow steps 1–2 in [wasm/PACKAGING.md](../../../wasm/PACKAGING.md).
+2. Copy **`wasm/artifacts/emcc-glue/shell.js`** and **`shell.wasm`** into this directory and commit.
 
-开发时 `vp dev` 会从 `public/` 原样提供静态文件。
+During development, `vp dev` serves files from `public/` as static assets.

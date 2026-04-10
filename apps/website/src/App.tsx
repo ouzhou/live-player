@@ -11,7 +11,7 @@ export default function App() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        跳到主要内容
+        Skip to main content
       </a>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-linear-to-b from-white/70 via-white/15 to-transparent" />
       <div className="relative mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:px-8">
@@ -22,7 +22,7 @@ export default function App() {
             </span>
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-foreground">Live Player</h1>
-              <p className="text-sm text-muted-foreground">HTTP-FLV 直播</p>
+              <p className="text-sm text-muted-foreground">HTTP-FLV live</p>
             </div>
           </div>
           <a
@@ -31,7 +31,8 @@ export default function App() {
             rel="noreferrer"
             target="_blank"
           >
-            <ExternalLink className="size-3.5 shrink-0" aria-hidden />在 GitHub 上查看
+            <ExternalLink className="size-3.5 shrink-0" aria-hidden />
+            View on GitHub
           </a>
         </header>
 

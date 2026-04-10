@@ -6,7 +6,7 @@ import { defineConfig } from "vite-plus";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** 与 @live-player/core 的 package.json `exports.development` 对齐，开发时直连源码 */
+/** Align with @live-player/core package.json `exports.development` — dev resolves package source directly. */
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {

@@ -1,28 +1,30 @@
 # live-player
 
-实验性 **HTTP-FLV** 播放器 SDK：**视频 H.264 与 H.265（HEVC）**，音频 **AAC**。自研 FLV demux（含传统 H.265、Enhanced RTMP 等），**WebCodecs** 输出到 Canvas / Web Audio；视频可选用 **WASM + WebGL**。仓库为 **pnpm workspace**，工具链用 **Vite+**（`vp`）。
+**Languages:** [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Français](README.fr.md)
 
-## 在线演示
+Experimental **HTTP-FLV** player SDK: **H.264 and H.265 (HEVC)** video, **AAC** audio. Custom FLV demuxer (including legacy H.265, Enhanced RTMP, etc.), **WebCodecs** output to Canvas / Web Audio; optional **WASM + WebGL** for video. This repo is a **pnpm workspace** and uses **Vite+** (`vp`) as the toolchain.
 
-**[https://flv-live-player.vercel.app/](https://flv-live-player.vercel.app/)**（对应 `apps/website`）
+## Live demo
 
-## 功能概览
+**[https://flv-live-player.vercel.app/](https://flv-live-player.vercel.app/)** (from `apps/website`)
 
-- HTTP-FLV 拉流、自研 demux、**H.264 / H.265** 共用一条管线
-- 视频 **`decodeMode`**：`auto`（首帧后 WebCodecs ↔ WASM）| `webcodecs` | `wasm`（需 `public/wasm`）
-- 音频：WebCodecs `AudioDecoder` + Web Audio
-- **`videoCodecHint`**（`auto` / `avc` / `hevc`）、**`probeHttpFlv`**（只读流头、不解码）
-- **`apps/website`**：React + Tailwind v4 + shadcn/ui 演示，直连 `@live-player/core` 源码
+## Features
 
-## 在项目中使用
+- HTTP-FLV pull, custom demux, **H.264 / H.265** on one pipeline
+- Video **`decodeMode`**: `auto` (switch WebCodecs ↔ WASM after first frame) | `webcodecs` | `wasm` (requires `public/wasm`)
+- Audio: WebCodecs `AudioDecoder` + Web Audio
+- **`videoCodecHint`** (`auto` / `avc` / `hevc`), **`probeHttpFlv`** (read stream header only, no decode)
+- **`apps/website`**: React + Tailwind v4 + shadcn/ui demo, imports `@live-player/core` source directly
 
-### 安装
+## Using in your project
+
+### Install
 
 ```bash
 pnpm add @live-player/core
 ```
 
-### 最小示例
+### Minimal example
 
 ```ts
 import { LivePlayer } from "@live-player/core";
@@ -31,26 +33,26 @@ const player = new LivePlayer({ container: document.getElementById("player-root"
 await player.play("https://example.com/live.flv");
 ```
 
-完整示例（探测、回调、停播等）与更多用法见 **[`docs/using-live-player.md`](docs/using-live-player.md)**。
+For full examples (probing, callbacks, stop, etc.) see **[`docs/using-live-player.md`](docs/using-live-player.md)**.
 
-## 架构
+## Architecture
 
-**分层**：`apps/website` → 依赖 **`@live-player/core`**；[`wasm/`](wasm/) 构建产物放到宿主 **`public/wasm/`**（或 `wasmScriptUrl`）。
+**Layers**: `apps/website` → **`@live-player/core`**; [`wasm/`](wasm/) build output goes in the host app’s **`public/wasm/`** (or `wasmScriptUrl`).
 
-**管线**：HTTP 流式拉取 → **`FlvDemuxer`** → 视频 **WebCodecs 或 WASM**，音频 **WebCodecs** → Canvas / Web Audio。原则与 H.265 FLV 细节见 [`docs/architecture-demux-decoders.md`](docs/architecture-demux-decoders.md)、[`docs/superpowers/specs/2026-04-10-hevc-flv-dual-format-design.md`](docs/superpowers/specs/2026-04-10-hevc-flv-dual-format-design.md)。
+**Pipeline**: HTTP streaming → **`FlvDemuxer`** → video **WebCodecs or WASM**, audio **WebCodecs** → Canvas / Web Audio. Design notes and H.265 FLV details: [`docs/architecture-demux-decoders.md`](docs/architecture-demux-decoders.md), [`docs/superpowers/specs/2026-04-10-hevc-flv-dual-format-design.md`](docs/superpowers/specs/2026-04-10-hevc-flv-dual-format-design.md).
 
 ```
-HTTP → FLV demux（H.264 / H.265 + AAC）
+HTTP → FLV demux (H.264 / H.265 + AAC)
          ↓
-   视频：WebCodecs 或 WASM     音频：AudioDecoder
+   Video: WebCodecs or WASM     Audio: AudioDecoder
          ↓                           ↓
         Canvas / WebGL            Web Audio
 ```
 
-## 本地联调推流（可选）
+## Local ingest (optional)
 
-本机起 RTMP → HTTP-FLV（如 Monibuca、SRS），流地址可与演示默认 `http://localhost:8080/flv/live/test` 对齐。若有本地 **`push-command/`**（可能被 gitignore），按目录说明用 ffmpeg 推至 `rtmp://127.0.0.1:1935/live/test`。
+Run RTMP → HTTP-FLV locally (e.g. Monibuca, SRS) and point the stream at something like the demo default `http://localhost:8080/flv/live/test`. If you have a local **`push-command/`** folder (may be gitignored), follow its README to push with ffmpeg to `rtmp://127.0.0.1:1935/live/test`.
 
-## 许可
+## License
 
-以各包 `package.json` 的 `license` 为准（`@live-player/core` 为 **MIT**）。
+Per-package `license` in `package.json` (`@live-player/core` is **MIT**).

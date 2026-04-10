@@ -10,6 +10,8 @@ export type EmscriptenModule = {
   _wasm_init: () => number;
   _wasm_close: () => number;
   _wasm_video_config: (ptr: number, len: number) => number;
+  /** 新构建：支持 HEVC；旧 `shell.wasm` 可能不存在 */
+  _wasm_video_config_ex?: (ptr: number, len: number, isHevc: number) => number;
   _wasm_video_chunk: (ptr: number, len: number, ptsMs: number, isKey: number) => number;
   _wasm_has_decoded_frame: () => number;
   _wasm_frame_width: () => number;

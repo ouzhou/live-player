@@ -18,7 +18,7 @@ export class VideoDecoderPipeline {
     this.onDecoderError = onDecoderError;
   }
 
-  configureFromAvc(description: Uint8Array, codec: string): void {
+  configureVideo(description: Uint8Array, codec: string): void {
     this.closeDecoder();
     this.hasSized = false;
     this.decoder = new VideoDecoder({

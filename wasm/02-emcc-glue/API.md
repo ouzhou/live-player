@@ -6,12 +6,12 @@
 
 ## 1. 事件 → WASM 调用映射（建议）
 
-| `FlvDemuxEvent`                                | 建议的 WASM 入口（C ABI，`extern "C"`）       | 说明                                                                                                                       |
-| ---------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `{ kind: "config", description, codec }`       | `wasm_video_config(data, len)`                | `description` = **AVCDecoderConfigurationRecord**（含 SPS/PPS），与 WebCodecs `configure({ description })` 同源            |
-| `{ kind: "chunk", data, ptsMs, keyFrame }`     | `wasm_video_chunk(data, len, pts_ms, is_key)` | `data` = 该帧 **NAL 负载**（与当前喂给 `VideoDecoder` 的 `EncodedVideoChunk` 同源）；`pts_ms` 用 **double**，与 demux 一致 |
-| `{ kind: "audio_config", description, codec }` | `wasm_audio_config(data, len)`                | `description` = **AudioSpecificConfig**                                                                                    |
-| `{ kind: "audio_chunk", data, ptsMs }`         | `wasm_audio_chunk(data, len, pts_ms)`         | AAC 帧原始字节                                                                                                             |
+| `FlvDemuxEvent`                                | 建议的 WASM 入口（C ABI，`extern "C"`）                                      | 说明                                                                                                                                                                        |
+| ---------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{ kind: "config", description, codec }`       | `wasm_video_config(data, len)` 或 `wasm_video_config_ex(data, len, is_hevc)` | `description` = **AVCDecoderConfigurationRecord** 或 **HEVCDecoderConfigurationRecord**；`is_hevc`：`1` = HEVC，`0` = H.264。旧构建仅有 `wasm_video_config`（等同 H.264）。 |
+| `{ kind: "chunk", data, ptsMs, keyFrame }`     | `wasm_video_chunk(data, len, pts_ms, is_key)`                                | `data` = 该帧 **NAL 负载**（与当前喂给 `VideoDecoder` 的 `EncodedVideoChunk` 同源）；`pts_ms` 用 **double**，与 demux 一致                                                  |
+| `{ kind: "audio_config", description, codec }` | `wasm_audio_config(data, len)`                                               | `description` = **AudioSpecificConfig**                                                                                                                                     |
+| `{ kind: "audio_chunk", data, ptsMs }`         | `wasm_audio_chunk(data, len, pts_ms)`                                        | AAC 帧原始字节                                                                                                                                                              |
 
 约定：
 

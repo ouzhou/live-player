@@ -2941,6 +2941,7 @@ var _wasm_get_version,
   _wasm_init,
   _wasm_close,
   _wasm_video_config,
+  _wasm_video_config_ex,
   _wasm_video_chunk,
   _wasm_has_decoded_frame,
   _wasm_frame_width,
@@ -2962,21 +2963,22 @@ function assignWasmExports(wasmExports) {
   _wasm_init = Module["_wasm_init"] = wasmExports["v"];
   _wasm_close = Module["_wasm_close"] = wasmExports["w"];
   _wasm_video_config = Module["_wasm_video_config"] = wasmExports["x"];
-  _wasm_video_chunk = Module["_wasm_video_chunk"] = wasmExports["y"];
-  _wasm_has_decoded_frame = Module["_wasm_has_decoded_frame"] = wasmExports["z"];
-  _wasm_frame_width = Module["_wasm_frame_width"] = wasmExports["A"];
-  _wasm_frame_height = Module["_wasm_frame_height"] = wasmExports["B"];
-  _wasm_copy_i420 = Module["_wasm_copy_i420"] = wasmExports["C"];
-  _wasm_audio_config = Module["_wasm_audio_config"] = wasmExports["D"];
-  _wasm_audio_chunk = Module["_wasm_audio_chunk"] = wasmExports["E"];
-  _free = Module["_free"] = wasmExports["G"];
-  _malloc = Module["_malloc"] = wasmExports["H"];
-  __emscripten_stack_restore = wasmExports["I"];
-  __emscripten_stack_alloc = wasmExports["J"];
-  _emscripten_stack_get_current = wasmExports["K"];
+  _wasm_video_config_ex = Module["_wasm_video_config_ex"] = wasmExports["y"];
+  _wasm_video_chunk = Module["_wasm_video_chunk"] = wasmExports["z"];
+  _wasm_has_decoded_frame = Module["_wasm_has_decoded_frame"] = wasmExports["A"];
+  _wasm_frame_width = Module["_wasm_frame_width"] = wasmExports["B"];
+  _wasm_frame_height = Module["_wasm_frame_height"] = wasmExports["C"];
+  _wasm_copy_i420 = Module["_wasm_copy_i420"] = wasmExports["D"];
+  _wasm_audio_config = Module["_wasm_audio_config"] = wasmExports["E"];
+  _wasm_audio_chunk = Module["_wasm_audio_chunk"] = wasmExports["F"];
+  _free = Module["_free"] = wasmExports["H"];
+  _malloc = Module["_malloc"] = wasmExports["I"];
+  __emscripten_stack_restore = wasmExports["J"];
+  __emscripten_stack_alloc = wasmExports["K"];
+  _emscripten_stack_get_current = wasmExports["L"];
   memory = wasmMemory = wasmExports["s"];
   __indirect_function_table = wasmExports["__indirect_function_table"];
-  _ff_h264_cabac_tables = Module["_ff_h264_cabac_tables"] = wasmExports["F"].value;
+  _ff_h264_cabac_tables = Module["_ff_h264_cabac_tables"] = wasmExports["G"].value;
 }
 var wasmImports = {
   r: ___cxa_throw,

@@ -33,13 +33,23 @@ export class WasmVideoPipeline {
     ]) as (p: number, l: number, pts: number, key: number) => number;
   }
 
-  configureFromAvc(description: Uint8Array, _codec: string): void {
-    void _codec;
+  configureVideo(description: Uint8Array, codec: string): void {
     const ptr = this.mod._malloc(description.length);
     const heap = getEmscriptenHeap(this.mod);
     try {
       heap.set(description, ptr);
-      const ret = this.mod._wasm_video_config(ptr, description.length);
+      const isHevc = codec.startsWith("hev1") || codec.startsWith("hvc1");
+      const ex = this.mod._wasm_video_config_ex;
+      let ret: number;
+      if (ex) {
+        ret = ex(ptr, description.length, isHevc ? 1 : 0);
+      } else if (isHevc) {
+        throw new Error(
+          "当前 shell.wasm 不含 wasm_video_config_ex，无法软解 HEVC。请按 wasm/PACKAGING.md 重新构建并拷贝到 public/wasm/",
+        );
+      } else {
+        ret = this.mod._wasm_video_config(ptr, description.length);
+      }
       if (ret !== 0) {
         throw new Error(`wasm_video_config failed: ${ret}`);
       }

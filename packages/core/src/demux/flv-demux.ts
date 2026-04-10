@@ -1,6 +1,13 @@
 import type { FlvDemuxEvent, FlvDemuxParseResult } from "./demux-events.ts";
 import { audioSpecificConfigToCodecString } from "../codec-params/aac-codec-string.ts";
-import { avcDecoderConfigurationRecordToCodecString } from "../codec-params/avc-codec-string.ts";
+import {
+  FLV_VIDEO_CODEC_AVC,
+  FLV_VIDEO_CODEC_HEVC,
+  FLV_VIDEO_EX_HEADER_FLAG,
+  parseFlvVideoTagEnhanced,
+  parseFlvVideoTagLegacyAvc,
+  parseFlvVideoTagLegacyHevc,
+} from "./flv-video.ts";
 
 export type { FlvDemuxEvent, FlvDemuxParseResult } from "./demux-events.ts";
 
@@ -24,16 +31,6 @@ function readTagTimestampMs(buf: Uint8Array, tagStart: number): number {
     (buf[tagStart + 6]! << 16) |
     (buf[tagStart + 7]! << 24)
   );
-}
-
-/** AVC 包内 CompositionTime，SI24（大端符号扩展）。 */
-function readCompositionTimeMs(buf: Uint8Array, o: number): number {
-  const b0 = buf[o]!;
-  const b1 = buf[o + 1]!;
-  const b2 = buf[o + 2]!;
-  let v = (b0 << 16) | (b1 << 8) | b2;
-  if (v & 0x800000) v |= ~0xffffff;
-  return v;
 }
 
 export class FlvDemuxer {
@@ -152,61 +149,30 @@ export class FlvDemuxer {
         return { events, consumed: o };
       }
 
-      const frameAndCodec = body[0]!;
-      const codecId = frameAndCodec & 0x0f;
-      if (codecId !== 7) {
-        events.push({
-          kind: "error",
-          message: `Unsupported video codec id ${codecId} (need H.264/AVC); video tag data[0]=0x${frameAndCodec.toString(16).padStart(2, "0")}. Dump HTTP body with curl and run ffprobe if unsure.`,
-        });
-        return { events, consumed: o };
-      }
-
-      if (body.length < 5) {
-        events.push({ kind: "error", message: "Truncated AVC video tag" });
-        return { events, consumed: o };
-      }
-
-      const packetType = body[1]!;
-      const comp = readCompositionTimeMs(body, 2);
-      const ptsMs = ts + comp;
-      const keyFrame = frameAndCodec >> 4 === 1;
-      const payload = body.subarray(5);
-
-      if (packetType === 0) {
-        const description = new Uint8Array(payload);
-        let codec: string;
-        try {
-          codec = avcDecoderConfigurationRecordToCodecString(description);
-        } catch (e) {
+      const b0 = body[0]!;
+      let videoResult: ReturnType<typeof parseFlvVideoTagLegacyAvc>;
+      if ((b0 & FLV_VIDEO_EX_HEADER_FLAG) !== 0) {
+        videoResult = parseFlvVideoTagEnhanced(body, ts);
+      } else {
+        const codecId = b0 & 0x0f;
+        if (codecId === FLV_VIDEO_CODEC_AVC) {
+          videoResult = parseFlvVideoTagLegacyAvc(body, ts);
+        } else if (codecId === FLV_VIDEO_CODEC_HEVC) {
+          videoResult = parseFlvVideoTagLegacyHevc(body, ts);
+        } else {
           events.push({
             kind: "error",
-            message: e instanceof Error ? e.message : String(e),
+            message: `Unsupported video codec id ${codecId}; video tag data[0]=0x${b0.toString(16).padStart(2, "0")}. Need AVC(7), HEVC(12), or Enhanced RTMP (bit7=1).`,
           });
           return { events, consumed: o };
         }
-        events.push({
-          kind: "config",
-          ptsMs,
-          description,
-          codec,
-        });
-      } else if (packetType === 1) {
-        events.push({
-          kind: "chunk",
-          ptsMs,
-          data: new Uint8Array(payload),
-          keyFrame,
-        });
-      } else if (packetType === 2) {
-        /* AVC end of sequence — ignore */
-      } else {
-        events.push({
-          kind: "error",
-          message: `Unknown AVCPacketType ${packetType}`,
-        });
+      }
+
+      if (videoResult.error) {
+        events.push({ kind: "error", message: videoResult.error });
         return { events, consumed: o };
       }
+      events.push(...videoResult.events);
     }
 
     return { events, consumed: o };

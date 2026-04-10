@@ -51,8 +51,10 @@ RUN emconfigure ./configure \
       --enable-static \
       --disable-shared \
       --enable-decoder=h264 \
+      --enable-decoder=hevc \
       --enable-decoder=aac \
       --enable-parser=h264 \
+      --enable-parser=hevc \
       --enable-parser=aac \
       --enable-swscale \
       --enable-swresample \

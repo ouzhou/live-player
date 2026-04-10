@@ -62,8 +62,7 @@ int wasm_close() {
   return 0;
 }
 
-EMSCRIPTEN_KEEPALIVE
-int wasm_video_config(const uint8_t* data, int len) {
+static int wasm_video_config_inner(const uint8_t* data, int len, int is_hevc) {
   if (!data && len > 0) {
     return -1;
   }
@@ -79,7 +78,7 @@ int wasm_video_config(const uint8_t* data, int len) {
     g_avctx = nullptr;
   }
 
-  g_codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+  g_codec = avcodec_find_decoder(is_hevc ? AV_CODEC_ID_HEVC : AV_CODEC_ID_H264);
   if (!g_codec) {
     return -3;
   }
@@ -112,6 +111,18 @@ int wasm_video_config(const uint8_t* data, int len) {
     return -3;
   }
   return 0;
+}
+
+/** 与旧版 `shell.js` 二进制兼容：仅 H.264。 */
+EMSCRIPTEN_KEEPALIVE
+int wasm_video_config(const uint8_t* data, int len) {
+  return wasm_video_config_inner(data, len, 0);
+}
+
+/** H.264（is_hevc=0）或 HEVC（is_hevc=1）。 */
+EMSCRIPTEN_KEEPALIVE
+int wasm_video_config_ex(const uint8_t* data, int len, int is_hevc) {
+  return wasm_video_config_inner(data, len, is_hevc);
 }
 
 EMSCRIPTEN_KEEPALIVE
